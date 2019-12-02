@@ -1,9 +1,9 @@
 store.b r0 0xfec0 r0 ;throttle
 add     r9 r0 64
 store.b r0 0xfee5 r9 ; scan arc
-add r9  r0 1500
+add     r9  r0 1500
 store   r0 0xfee6 r9 ; scan range
-store   r0 0xfee4 r1 ; use scanner keepshift
+store.b r0 0xfee4 r1 ; use scanner keepshift
 add     r2 r0 0      ; r2 is our scan results
 add     r3 r0 0      ; r3 is current turret offset from hull
 add     r4 r0 0      ; r4 is current scanner offset from hull
@@ -33,23 +33,23 @@ jmp r0 !main
   add r4 r4 r2       ; add rotated angle to scanner offset
 
   ; fire
-  store r0 0xfed0 r1
+  store.b r0 0xfed0 r1
 
   ; shrink scan arc if greater than 16
-  load r5 r0 0xfee5 ; read current scan arc
+  load.b r5 r0 0xfee5 ; read current scan arc
   cmp r5 16         ; compare
   jmp.> r0 !track-fire-shrink ;shrink
 
-  store r0 0xfee8 r1 ; scan
+  store.b r0 0xfee8 r1 ; scan
   load r2 r0 0xfee2  ; read from "radar target range" port
 jmp r0 !main
 
 !track-fire-shrink
   sub r5 r5 16       ; subtract 16
-  store r0 0xfee5 r5 ; set new scan arc
+  store.b r0 0xfee5 r5 ; set new scan arc
 
   ; TODO: when there is working call/ret, this should be in track-fire
-  store r0 0xfee8 r1 ;scan
+  store.b r0 0xfee8 r1 ;scan
   load r2 r0 0xfee2  ; read from "radar target range" port
 jmp r0 !main
 
@@ -57,17 +57,17 @@ jmp r0 !main
 !search
   ; grow scan arc
   ; TODO: stop growing at 64
-  load r5 r0 0xfee5  ; read current scan arc
+  load.b r5 r0 0xfee5  ; read current scan arc
   add r5 r5 16       ; add 16
-  store r0 0xfee5 r5 ; set new scan arc
+  store.b r0 0xfee5 r5 ; set new scan arc
 
 
   ; rotate scanner by scan arc*2
-  load r5 r0 0xfee5  ; read current scan arc
+  load.b r5 r0 0xfee5  ; read current scan arc
   mul r5 r5 2        ; multiply by 2
   store r0 0xfee9 r5 ; rotate scanner
   add r4 r4 r5       ; add rotated angle to scanner offset
 
-  store r0 0xfee8 r1 ; scan
+  store.b r0 0xfee8 r1 ; scan
   load r2 r0 0xfee2  ; read from "radar target range" port
 jmp r0 !main
