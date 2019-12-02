@@ -1,75 +1,73 @@
-out.ii 0 0      ; throttle
-out.ii 14 64    ; scan arc
-out.ii 16 1500  ; scan range
-out.ii 12 1     ; use scanner keepshift
-mov.i 2 0       ; r2 is our scan results
-mov.i 3 0       ; r3 is current turret offset from hull
-mov.i 4 0       ; r4 is current scanner offset from hull
+store.b r0 0xfec0 r0 ;throttle
+add     r9 r0 64
+store.b r0 0xfee5 r9 ; scan arc
+add r9  r0 1500
+store   r0 0xfee6 r9 ; scan range
+store   r0 0xfee4 r1 ; use scanner keepshift
+add     r2 r0 0      ; r2 is our scan results
+add     r3 r0 0      ; r3 is current turret offset from hull
+add     r4 r0 0      ; r4 is current scanner offset from hull
 
 ; main loop
 !main
-  cmp.ri 2 0         ; compare r2 to 0
-  jgr.i !track-fire  ; we have a target. go into tracking mode!
-  jeq.i !search      ; we don't have a target. search!
-jmp.i !main
+  cmp r2 0              ; compare r2 to 0
+  jmp.> r0 !track-fire  ; we have a target. go into tracking mode!
+  jmp.= r0 !search      ; we don't have a target. search!
+jmp r0 !main
 
 ; tracks a target, and fires at it
 ; only call if there is a target in the scanner
 
 !track-fire
   ; turn our turret towards the enemy
-  in.i 2 20    ; read radar target angle
-  sub.rr 2 2 3 ; subtract current turret offset from target angle
-  out.ir 4 2  ; rotate turret to that offset
-  mov.r 5 3    ; put turret offset in r5 so we can undo the turret offset subtract later
-  add.rr 3 3 2 ; add rotated angle to turret offset
+  load r2 r0 0xfee0  ; read radar target angle
+  sub r2 r2 r3       ; subtract current turret offset from target angle
+  store r0 0xfed2 r2 ; rotate turret to that offset
+  add r5 r3 0        ; put turret offset in r5 so we can undo the turret offset subtract later
+  add r3 r3 r2       ; add rotated angle to turret offset
 
   ; turn scanner towards enemy
-  add.rr 2 2 5 ; undo turret subtraction
-  sub.rr 2 2 4 ; subtract current scanner offset from target angle
-  out.ir 8 2   ; rotate scanner to that offset
-  add.rr 4 4 2 ; add rotated angle to scanner offset
+  add r2 r2 r5       ; undo turret subtraction
+  sub r2 r2 r4       ; subtract current scanner offset from target angle
+  store r0 0xfee9 r2 ; rotate scanner to that offset
+  add r4 r4 r2       ; add rotated angle to scanner offset
 
   ; fire
-  ;int.i 3
-  sb.rir 0 65535 1
+  store r0 0xfed0 r1
 
   ; shrink scan arc if greater than 16
-  in.i 5 14   ; read current scan arc
-  cmp.ri 5 16 ; compare
-  jgr.i !track-fire-shrink ; shrink
+  load r5 r0 0xfee5 ; read current scan arc
+  cmp r5 16         ; compare
+  jmp.> r0 !track-fire-shrink ;shrink
 
-  ;int.i 2      ; scan
-  sb.rir 0 65525 1
-  in.i 2 18    ; read from "radar target range" port
-jmp.i !main
+  store r0 0xfee8 r1 ; scan
+  load r2 r0 0xfee2  ; read from "radar target range" port
+jmp r0 !main
 
 !track-fire-shrink
-  sub.ri 5 5 16 ; subtract 16
-  out.ir 14 5   ; set new scan arc
+  sub r5 r5 16       ; subtract 16
+  store r0 0xfee5 r5 ; set new scan arc
 
   ; TODO: when there is working call/ret, this should be in track-fire
-  ;int.i 2      ; scan
-  sb.rir 0 65525 1
-  in.i 2 18    ; read from "radar target range" port
-jmp.i !main
+  store r0 0xfee8 r1 ;scan
+  load r2 r0 0xfee2  ; read from "radar target range" port
+jmp r0 !main
 
 ; searches for a target
 !search
   ; grow scan arc
   ; TODO: stop growing at 64
-  in.i 5 14   ; read current scan arc
-  add.ri 5 5 16 ; add 16
-  out.ir 14 5 ; set new scan arc
+  load r5 r0 0xfee5  ; read current scan arc
+  add r5 r5 16       ; add 16
+  store r0 0xfee5 r5 ; set new scan arc
 
 
   ; rotate scanner by scan arc*2
-  in.i 5 14 ; read current scan arc
-  mul.ri 5 5 2 ; multiply by 2
-  out.ir 8 5   ; rotate scanner
-  add.rr 4 4 5 ; add rotated angle to scanner offset
+  load r5 r0 0xfee5  ; read current scan arc
+  mul r5 r5 2        ; multiply by 2
+  store r0 0xfee9 r5 ; rotate scanner
+  add r4 r4 r5       ; add rotated angle to scanner offset
 
-  ;int.i 2      ; scan
-  sb.rir 0 65525 1
-  in.i 2 18    ; read from "radar target range" port
-jmp.i !main
+  store r0 0xfee8 r1 ; scan
+  load r2 r0 0xfee2  ; read from "radar target range" port
+jmp r0 !main
